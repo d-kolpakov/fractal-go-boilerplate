@@ -12,11 +12,16 @@ import (
 const ServiceName = "fractal-go-boilerplate"
 
 func main() {
+	lDrivers := make([]logger.LogDriver, 0, 5)
+
+	stdoutLD := &logger.STDOUTDriver{}
+	lDrivers = append(lDrivers, stdoutLD)
+
 	lc := logger.LoggerConfig{
 		ServiceName: ServiceName,
-		Level:       configo.EnvInt("logging-level", logger.LOG),
+		Level:       configo.EnvInt("logging-level", logger.TRACE),
 		Buffer:      configo.EnvInt("logging-buffer-size", 1000),
-		Output:      nil,
+		Output:      lDrivers,
 	}
 	l, err := logger.GetLogger(lc)
 
