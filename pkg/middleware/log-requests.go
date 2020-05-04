@@ -9,10 +9,37 @@ import (
 )
 
 type RequestLog struct {
-	Duration    time.Duration `json:"duration"`
-	Request     string        `json:"request"`
-	RequestBody string        `json:"request_body"`
-	Response    string        `json:"response"`
+	Duration        time.Duration `json:"duration"`
+	Request         string        `json:"request"`
+	RequestBody     string        `json:"request_body"`
+	ResponseBody    string        `json:"response"`
+	ResponseSC      int           `json:"response_status_code"`
+	ResponseHeaders http.Header   `json:"response_headers"`
+}
+
+type responseLogWriter struct {
+	rw         http.ResponseWriter
+	Body       []byte
+	StatusCode int
+}
+
+func (w *responseLogWriter) Header() http.Header {
+	return w.rw.Header()
+}
+
+func (w *responseLogWriter) Write(b []byte) (int, error) {
+	s, err := w.rw.Write(b)
+
+	if err == nil {
+		w.Body = b
+	}
+
+	return s, err
+}
+
+func (w *responseLogWriter) WriteHeader(statusCode int) {
+	w.StatusCode = statusCode
+	w.rw.WriteHeader(statusCode)
 }
 
 // LogRequests Мидлвайр, который логирует все входящие запросы
@@ -27,8 +54,11 @@ func (c *Controller) LogRequests(next http.Handler) http.Handler {
 		}
 		r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		rw := &responseLogWriter{
+			rw: w,
+		}
 
-		defer func() {
+		defer func(t time.Time, rw *responseLogWriter) {
 			lBody := RequestLog{}
 
 			byteDump, err := httputil.DumpRequest(r, false)
@@ -43,9 +73,14 @@ func (c *Controller) LogRequests(next http.Handler) http.Handler {
 				}
 
 				lBody.Duration = time.Since(t)
+
+				lBody.ResponseHeaders = rw.Header()
+				lBody.ResponseBody = string(rw.Body)
+				lBody.ResponseSC = rw.StatusCode
+
 				c.L.DebugWithContext(ctx, lBody)
 			}
-		}()
-		next.ServeHTTP(w, r)
+		}(t, rw)
+		next.ServeHTTP(rw, r)
 	})
 }
