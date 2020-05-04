@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -9,12 +10,12 @@ import (
 )
 
 type RequestLog struct {
-	Duration        time.Duration `json:"duration"`
-	Request         string        `json:"request"`
-	RequestBody     string        `json:"request_body"`
-	ResponseBody    string        `json:"response"`
-	ResponseSC      int           `json:"response_status_code"`
-	ResponseHeaders http.Header   `json:"response_headers"`
+	Duration        string      `json:"duration"`
+	Request         string      `json:"request"`
+	RequestBody     string      `json:"request_body"`
+	ResponseBody    string      `json:"response"`
+	ResponseSC      int         `json:"response_status_code"`
+	ResponseHeaders http.Header `json:"response_headers"`
 }
 
 type responseLogWriter struct {
@@ -72,7 +73,7 @@ func (c *Controller) LogRequests(next http.Handler) http.Handler {
 					lBody.RequestBody = string(bodyBytes)
 				}
 
-				lBody.Duration = time.Since(t)
+				lBody.Duration = fmt.Sprint("%w", time.Since(t))
 
 				lBody.ResponseHeaders = rw.Header()
 				lBody.ResponseBody = string(rw.Body)
