@@ -15,5 +15,7 @@ type Handler struct {
 }
 
 func (h *Handler) HomeRouteHandler(w http.ResponseWriter, r *http.Request) {
+	h.L.NewLogEvent().WithRequest(r).LogWithContext(r.Context(), "HomeRouteHandler")
+
 	response.JSON(w, http.StatusOK, fmt.Sprintf("Hello! This is %s. Version: %s", h.ServiceName, h.AppVersion))
 }

@@ -21,8 +21,9 @@ type Routing struct {
 func (route *Routing) InitRouter() error {
 	route.serviceUrlPrefix = "/" + route.ServiceName
 	mc := middleware.Controller{
-		Db: route.Db,
-		L:  route.L,
+		Db:    route.Db,
+		L:     route.L,
+		SName: route.ServiceName,
 	}
 
 	r := chi.NewRouter()
@@ -33,7 +34,8 @@ func (route *Routing) InitRouter() error {
 
 	// Application endpoints
 	r.Group(func(r chi.Router) {
-		r.Use(mc.ContextRequestMiddleware, mc.LogRequests)
+		r.Use(mc.ContextRequestMiddleware)
+		//r.Use(mc.ContextRequestMiddleware, mc.LogRequests)
 
 		handler := handlers.Handler{
 			L:           route.L,

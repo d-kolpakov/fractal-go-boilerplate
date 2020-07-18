@@ -6,6 +6,7 @@ import (
 )
 
 type Controller struct {
-	Db *sql.DB
-	L  *logger.Logger
+	Db    *sql.DB
+	L     *logger.Logger
+	SName string
 }
