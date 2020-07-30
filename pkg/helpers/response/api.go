@@ -26,6 +26,10 @@ func WriteBody(w http.ResponseWriter, status int, body []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
+	if status == http.StatusNoContent {
+		return
+	}
+
 	_, err := w.Write(body)
 
 	if err != nil {

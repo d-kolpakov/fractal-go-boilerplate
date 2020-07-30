@@ -51,7 +51,7 @@ func (c *Controller) LogRequests(next http.Handler) http.Handler {
 		t := time.Now()
 		bodyBytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			c.L.ErrWithContext(r.Context(), err, "")
+			c.L.NewLogEvent().Err(r.Context(), err, "")
 		}
 		r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -65,7 +65,7 @@ func (c *Controller) LogRequests(next http.Handler) http.Handler {
 			byteDump, err := httputil.DumpRequest(r, false)
 
 			if err != nil {
-				c.L.ErrWithContext(ctx, err, "")
+				c.L.NewLogEvent().Err(ctx, err, "")
 			} else {
 				lBody.Request = string(byteDump)
 
@@ -79,7 +79,7 @@ func (c *Controller) LogRequests(next http.Handler) http.Handler {
 				lBody.ResponseBody = string(rw.Body)
 				lBody.ResponseSC = rw.StatusCode
 
-				c.L.DebugWithContext(ctx, lBody)
+				c.L.NewLogEvent().Debug(ctx, lBody)
 			}
 		}(t, rw)
 		next.ServeHTTP(rw, r)

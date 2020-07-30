@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
 	"github.com/d-kolpakov/logger"
+	"github.com/d-kolpakov/logger/drivers/stdout"
 	"github.com/dhnikolas/configo"
 	"log"
 	"net/http"
@@ -14,7 +16,7 @@ const ServiceName = "fractal-go-boilerplate"
 func main() {
 	lDrivers := make([]logger.LogDriver, 0, 5)
 
-	stdoutLD := &logger.STDOUTDriver{}
+	stdoutLD := &stdout.STDOUTDriver{}
 	lDrivers = append(lDrivers, stdoutLD)
 
 	lc := logger.LoggerConfig{
@@ -29,7 +31,7 @@ func main() {
 		panic(err)
 	}
 
-	l.Debug(fmt.Sprintf(`start %s service`, ServiceName))
+	l.NewLogEvent().Debug(context.Background(), fmt.Sprintf(`start %s service`, ServiceName))
 
 	route := routes.Routing{
 		ServiceName: ServiceName,
