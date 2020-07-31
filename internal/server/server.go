@@ -52,7 +52,7 @@ func (h *handlerWrapper) Process(w http.ResponseWriter, r *http.Request) {
 			}
 		}(ctxWithoutTimeout, r, url)
 
-		resp = h.handlerFunc(w, r)
+		resp = h.handlerFunc(w, r.WithContext(ctx))
 		done()
 	}(ctx, ctxWithoutTimeout)
 
@@ -66,7 +66,7 @@ func (h *handlerWrapper) Process(w http.ResponseWriter, r *http.Request) {
 				WithTag("kind", "timeout").
 				WithTag("process", "request_handling").
 				WithRequest(r).
-				Error(ctx, "request timeout")
+				Error(ctxWithoutTimeout, "request timeout")
 
 			status = http.StatusBadRequest
 			h.statTimeout(ctxWithoutTimeout, url)
@@ -77,7 +77,7 @@ func (h *handlerWrapper) Process(w http.ResponseWriter, r *http.Request) {
 					h.l.NewLogEvent().
 						WithTag("kind", "response_err").
 						WithTag("process", "request_handling").
-						Error(ctx, fmt.Errorf("response must be []byte, nil has been given"))
+						Error(ctxWithoutTimeout, fmt.Errorf("response must be []byte, nil has been given"))
 				} else {
 					if bResp, ok := resp.Response.([]byte); ok {
 						response.WriteBody(w, resp.StatusCode, bResp)
@@ -85,7 +85,7 @@ func (h *handlerWrapper) Process(w http.ResponseWriter, r *http.Request) {
 						h.l.NewLogEvent().
 							WithTag("kind", "response_err").
 							WithTag("process", "request_handling").
-							Error(ctx, fmt.Errorf("response must be []byte, %v has been given", resp.Response))
+							Error(ctxWithoutTimeout, fmt.Errorf("response must be []byte, %v has been given", resp.Response))
 					}
 				}
 			} else {
