@@ -38,14 +38,14 @@ func GetStatsHelper(o *Options, db *sql.DB, l *logger.Logger) *Stats {
 	return stats
 }
 
-func (s *Stats) InsertStat(eventType string, url, stringVal *string, intVal *int64, data *string) {
+func (s *Stats) InsertStat(eventType string, url, stringVal *string, intVal *int64, data, xFrSource, requestID *string) {
 	t := time.Now().In(time.UTC)
-	go s.insertStat(eventType, url, stringVal, intVal, data, t)
+	go s.insertStat(eventType, url, stringVal, intVal, data, xFrSource, requestID, t)
 }
 
-func (s *Stats) insertStat(eventType string, url, stringVal *string, intVal *int64, data *string, t time.Time) {
-	q := fmt.Sprintf(`INSERT INTO %s (event_type, created_at, url, string_val, int_val, data)
-    VALUES ($1,$2,$3,$4,$5,$6)`, s.o.table)
+func (s *Stats) insertStat(eventType string, url, stringVal *string, intVal *int64, data, xFrSource, requestID *string, t time.Time) {
+	q := fmt.Sprintf(`INSERT INTO %s (event_type, created_at, url, string_val, int_val, data, x_fr_source, request_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, s.o.table)
 
 	args := []interface{}{
 		eventType,
@@ -54,6 +54,8 @@ func (s *Stats) insertStat(eventType string, url, stringVal *string, intVal *int
 		stringVal,
 		intVal,
 		data,
+		xFrSource,
+		requestID,
 	}
 
 	s.l.NewLogEvent().
@@ -62,10 +64,12 @@ func (s *Stats) insertStat(eventType string, url, stringVal *string, intVal *int
 		Debug(context.Background(), fmt.Sprintf("q: %s, args: %v", q, args))
 
 	_, err := s.db.Exec(q, args...)
-	s.l.NewLogEvent().
-		WithTag("kind", "sql_error").
-		WithTag("process", "stats_insert").
-		Error(context.Background(), err)
+	if err != nil {
+		s.l.NewLogEvent().
+			WithTag("kind", "sql_error").
+			WithTag("process", "stats_insert").
+			Error(context.Background(), err)
+	}
 }
 
 func getStatsTable(sn string) string {

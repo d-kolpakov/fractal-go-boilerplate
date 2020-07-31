@@ -13,6 +13,8 @@ func (s *Stats) migrate() {
 			primary key,
 	event_type varchar not null,
 	created_at timestamp not null,
+	x_fr_source varchar,
+	request_id varchar,
 	url varchar,
 	string_val text,
 	int_val NUMERIC,
@@ -26,8 +28,11 @@ func (s *Stats) migrate() {
 		Debug(context.Background(), fmt.Sprintf("q: %s, args: %v", q, nil))
 
 	_, err := s.db.Exec(q)
-	s.l.NewLogEvent().
-		WithTag("kind", "sql_error").
-		WithTag("process", "stats_migration").
-		Error(context.Background(), err)
+
+	if err != nil {
+		s.l.NewLogEvent().
+			WithTag("kind", "sql_error").
+			WithTag("process", "stats_migration").
+			Error(context.Background(), err)
+	}
 }

@@ -37,8 +37,10 @@ func (s *Stats) removeOldRows() {
 		Debug(context.Background(), fmt.Sprintf("q: %s, args: %v", q, args))
 
 	_, err := s.db.Exec(q, args...)
-	s.l.NewLogEvent().
-		WithTag("kind", "sql_error").
-		WithTag("process", "stats_gc").
-		Error(context.Background(), err)
+	if err != nil {
+		s.l.NewLogEvent().
+			WithTag("kind", "sql_error").
+			WithTag("process", "stats_gc").
+			Error(context.Background(), err)
+	}
 }
