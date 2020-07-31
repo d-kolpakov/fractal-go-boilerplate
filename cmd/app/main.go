@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/d-kolpakov/fractal-go-boilerplate/databases"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/logger"
 	"github.com/d-kolpakov/logger/drivers/stdout"
 	"github.com/dhnikolas/configo"
 	"log"
 	"net/http"
+	"time"
 )
 
 const ServiceName = "fractal-go-boilerplate"
@@ -33,11 +37,18 @@ func main() {
 
 	l.NewLogEvent().Debug(context.Background(), fmt.Sprintf(`start %s service`, ServiceName))
 
+	statsOption := &stats.Options{
+		Sn:         ServiceName,
+		Expiration: time.Duration(configo.EnvInt("stats_expiration", 240)) * time.Hour,
+	}
+	statsClient := stats.GetStatsHelper(statsOption, getStatsDb(), l)
+
 	route := routes.Routing{
 		ServiceName: ServiceName,
 		L:           l,
 		Db:          nil,
 		AppVersion:  configo.EnvString("app-version", "1.0.0"),
+		Stats:       statsClient,
 	}
 
 	err = route.InitRouter()
@@ -46,5 +57,19 @@ func main() {
 		panic(err)
 	}
 
-	log.Fatal(http.ListenAndServe(":8080", route.R))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", configo.EnvInt("app-server-port", 8081)), route.R))
+}
+
+func getStatsDb() *sql.DB {
+	o := &databases.Options{
+		Username:    configo.EnvString("db-stats-username", "db_user"),
+		Password:    configo.EnvString("db-stats-password", "pwd0123456789"),
+		Host:        configo.EnvString("db-stats-host", "localhost:5432"),
+		DB:          configo.EnvString("db-stats-name", "stats"),
+		Timeout:     configo.EnvInt("db-stats-timeout", 20),
+		MaxOpenConn: configo.EnvInt("db-stats-max-conns", 5),
+		MaxIdleConn: configo.EnvInt("db-stats-max-iddle-conns", 3),
+	}
+
+	return databases.GetConnection(o)
 }

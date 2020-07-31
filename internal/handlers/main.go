@@ -3,7 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
-	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/response"
+	"github.com/d-kolpakov/fractal-go-boilerplate/internal/server"
 	"github.com/d-kolpakov/logger"
 	"io/ioutil"
 	"net/http"
@@ -17,13 +17,19 @@ type Handler struct {
 	ServiceName string
 }
 
-func (h *Handler) HomeRouteHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HomeRouteHandler(w http.ResponseWriter, r *http.Request) server.Response {
 	h.L.NewLogEvent().WithRequest(r).Log(r.Context(), "HomeRouteHandler")
 
 	resp := `{"msg":"%s","dump":"%s","status":%d}`
 	msg := fmt.Sprintf("Hello! This is %s. Version: %s", h.ServiceName, h.AppVersion)
 	respBytes := []byte(fmt.Sprintf(resp, msg, h.formRequest(r), http.StatusOK))
-	response.WriteBody(w, http.StatusOK, respBytes)
+
+	return server.Response{
+		Response:     respBytes,
+		RealResponse: respBytes,
+		StatusCode:   http.StatusOK,
+		Err:          nil,
+	}
 }
 
 func (h *Handler) formRequest(r *http.Request) string {
