@@ -35,8 +35,8 @@ func (route *Routing) InitRouter() error {
 	monitoring.AttachMonitoringUrls(route.serviceUrlPrefix, route.R)
 
 	// Application endpoints
-	r.Group(func(r chi.Router) {
-		r.Use(mc.CheckXSource, mc.ContextRequestMiddleware, mc.LogRequests)
+	r.Route(route.serviceUrlPrefix,func(r chi.Router) {
+		r.Use(mc.ContextRequestMiddleware, mc.LogRequests)
 
 		handler := handlers.Handler{
 			L:           route.L,
@@ -44,7 +44,7 @@ func (route *Routing) InitRouter() error {
 			ServiceName: route.ServiceName,
 		}
 
-		r.Get(route.serviceUrlPrefix, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
+		r.Get("/", server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
 	})
 
 	return nil

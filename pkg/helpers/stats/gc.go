@@ -36,7 +36,7 @@ func (s *Stats) removeOldRows() {
 		WithTag("process", "stats_gc").
 		Debug(context.Background(), fmt.Sprintf("q: %s, args: %v", q, args))
 
-	_, err := s.db.Exec(q, args...)
+	_, err := s.db.Exec(context.Background(), q, args...)
 	if err != nil {
 		s.l.NewLogEvent().
 			WithTag("kind", "sql_error").

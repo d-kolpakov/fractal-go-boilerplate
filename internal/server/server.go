@@ -99,20 +99,32 @@ func (h *handlerWrapper) Process(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlerWrapper) statDuration(ctx context.Context, url string, t time.Duration) {
+	if h.stats == nil {
+		return
+	}
 	intVal := int64(t)
 	h.stats.InsertStat("server.response.duration", &url, nil, &intVal, nil, h.getXFrSourceFromCtx(ctx), h.getRequestIDFromCtx(ctx))
 }
 
 func (h *handlerWrapper) statResponseCode(ctx context.Context, url string, status int) {
+	if h.stats == nil {
+		return
+	}
 	intVal := int64(status)
 	h.stats.InsertStat("server.response.status", &url, nil, &intVal, nil, h.getXFrSourceFromCtx(ctx), h.getRequestIDFromCtx(ctx))
 }
 
 func (h *handlerWrapper) statTimeout(ctx context.Context, url string) {
+	if h.stats == nil {
+		return
+	}
 	h.stats.InsertStat("server.response.timeout", &url, nil, nil, nil, h.getXFrSourceFromCtx(ctx), h.getRequestIDFromCtx(ctx))
 }
 
 func (h *handlerWrapper) statPanic(ctx context.Context, url string) {
+	if h.stats == nil {
+		return
+	}
 	h.stats.InsertStat("server.panic", &url, nil, nil, nil, h.getXFrSourceFromCtx(ctx), h.getRequestIDFromCtx(ctx))
 }
 
