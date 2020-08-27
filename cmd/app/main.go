@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/databases"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/logger/drivers"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/logger"
 	"github.com/d-kolpakov/logger/drivers/stdout"
@@ -21,13 +22,25 @@ func main() {
 	lDrivers := make([]logger.LogDriver, 0, 5)
 
 	stdoutLD := &stdout.STDOUTDriver{}
-	lDrivers = append(lDrivers, stdoutLD)
+	stdoutLDWrapped := &drivers.STDOUTDriver{Base: stdoutLD}
+
+	lDrivers = append(lDrivers, stdoutLDWrapped)
 
 	lc := logger.LoggerConfig{
 		ServiceName: ServiceName,
 		Level:       configo.EnvInt("logging-level", logger.TRACE),
 		Buffer:      configo.EnvInt("logging-buffer-size", 1000),
 		Output:      lDrivers,
+		TagsFromCtx: map[logger.ContextUIDKey]string{
+			logger.ContextUIDKey("requestID"): "n",
+			logger.ContextUIDKey("token"):     "n",
+			logger.ContextUIDKey("source"):    "n",
+			logger.ContextUIDKey("from"):      "n",
+		},
+		NeedToLog: func(ctx context.Context, configuredLevel, level int) bool {
+			//todo log function
+			return true
+		},
 	}
 	l, err := logger.GetLogger(lc)
 
@@ -42,6 +55,7 @@ func main() {
 		Expiration: time.Duration(configo.EnvInt("stats_expiration", 240)) * time.Hour,
 	}
 	statsClient := stats.GetStatsHelper(statsOption, getStatsDb(), l)
+	stdoutLDWrapped.SetStats(statsClient)
 
 	route := routes.Routing{
 		ServiceName: ServiceName,
