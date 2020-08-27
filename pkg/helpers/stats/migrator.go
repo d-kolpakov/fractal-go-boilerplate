@@ -27,7 +27,7 @@ func (s *Stats) migrate() {
 		WithTag("process", "stats_migration").
 		Debug(context.Background(), fmt.Sprintf("q: %s, args: %v", q, nil))
 
-	_, err := s.db.Exec(q)
+	_, err := s.db.Exec(context.Background(), q)
 
 	if err != nil {
 		s.l.NewLogEvent().

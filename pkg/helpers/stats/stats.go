@@ -2,9 +2,9 @@ package stats
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/d-kolpakov/logger"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"regexp"
 	"strings"
 	"time"
@@ -14,7 +14,7 @@ const DefaultStatsTable = "default_stats_table"
 
 type Stats struct {
 	o  *Options
-	db *sql.DB
+	db *pgxpool.Pool
 	l  *logger.Logger
 }
 
@@ -24,7 +24,7 @@ type Options struct {
 	Expiration time.Duration
 }
 
-func GetStatsHelper(o *Options, db *sql.DB, l *logger.Logger) *Stats {
+func GetStatsHelper(o *Options, db *pgxpool.Pool, l *logger.Logger) *Stats {
 	o.table = getStatsTable(o.Sn)
 	stats := &Stats{
 		o:  o,
@@ -63,7 +63,7 @@ func (s *Stats) insertStat(eventType string, url, stringVal *string, intVal *int
 		WithTag("process", "stats_insert").
 		Debug(context.Background(), fmt.Sprintf("q: %s, args: %v", q, args))
 
-	_, err := s.db.Exec(q, args...)
+	_, err := s.db.Exec(context.Background(), q, args...)
 	if err != nil {
 		s.l.NewLogEvent().
 			WithTag("kind", "sql_error").
