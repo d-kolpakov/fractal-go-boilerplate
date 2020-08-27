@@ -6,6 +6,8 @@ require (
 	github.com/d-kolpakov/logger v1.4.0
 	github.com/dhnikolas/configo v0.0.0-20191219085731-745769fc698d
 	github.com/go-chi/chi v4.1.1+incompatible
+	github.com/golang/protobuf v1.4.0
+	github.com/grpc-ecosystem/grpc-gateway v1.14.7
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/mailru/easyjson v0.7.2

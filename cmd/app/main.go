@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/logger/drivers"
-	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/pg"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/logger"
 	"github.com/d-kolpakov/logger/drivers/stdout"
 	"github.com/dhnikolas/configo"
@@ -54,7 +54,12 @@ func main() {
 		Sn:         ServiceName,
 		Expiration: time.Duration(configo.EnvInt("stats_expiration", 240)) * time.Hour,
 	}
-	statsClient := stats.GetStatsHelper(statsOption, getStatsDb(), l)
+	statsPgPool, err := getStatsDb()
+
+	if err != nil {
+		panic(err)
+	}
+	statsClient := stats.GetStatsHelper(statsOption, statsPgPool, l)
 	stdoutLDWrapped.SetStats(statsClient)
 
 	route := routes.Routing{
