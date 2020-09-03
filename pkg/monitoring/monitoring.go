@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/probs"
 	"github.com/go-chi/chi"
 	"net/http"
 	"net/http/pprof"
@@ -12,6 +13,7 @@ import (
 func AttachMonitoringUrls(prefix string, router chi.Router) {
 	attachMetrics(prefix, router)
 	attachProfiler(prefix, router)
+	attachProbs(prefix, router)
 }
 
 func attachProfiler(prefix string, router chi.Router) {
@@ -34,4 +36,9 @@ func attachMetrics(prefix string, router chi.Router) {
 	router.HandleFunc(prefix+"/metrics/", func(w http.ResponseWriter, r *http.Request) {
 		promhttp.Handler().ServeHTTP(w, r)
 	})
+}
+
+func attachProbs(prefix string, router chi.Router) {
+	router.HandleFunc(prefix+"/_readiness/", probs.Readiness)
+	router.HandleFunc(prefix+"/_liveness/", probs.Liveness)
 }

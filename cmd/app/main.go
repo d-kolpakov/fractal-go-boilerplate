@@ -5,20 +5,56 @@ import (
 	"fmt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/logger/drivers"
+	natsclient "github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclirnt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/pg"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/probs"
 	"github.com/d-kolpakov/logger"
 	"github.com/d-kolpakov/logger/drivers/stdout"
 	"github.com/dhnikolas/configo"
+	"github.com/go-chi/chi"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
+	"math/rand"
 	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 	"time"
+
+	stan "github.com/nats-io/stan.go"
 )
 
 const ServiceName = "fractal-go-boilerplate"
 
 func main() {
+	sig := make(chan os.Signal, 1)
+	notify := []os.Signal{
+		syscall.SIGABRT,
+		syscall.SIGALRM,
+		syscall.SIGBUS,
+		syscall.SIGFPE,
+		syscall.SIGHUP,
+		syscall.SIGILL,
+		syscall.SIGINT,
+		syscall.SIGKILL,
+		syscall.SIGPIPE,
+		syscall.SIGQUIT,
+		syscall.SIGSEGV,
+		syscall.SIGTERM,
+		syscall.SIGUSR1,
+		syscall.SIGUSR2,
+		syscall.SIGPROF,
+		syscall.SIGSYS,
+		syscall.SIGTRAP,
+		syscall.SIGVTALRM,
+		syscall.SIGXCPU,
+		syscall.SIGXFSZ,
+	}
+
+	signal.Notify(sig, notify...)
+
 	lDrivers := make([]logger.LogDriver, 0, 5)
 
 	stdoutLD := &stdout.STDOUTDriver{}
@@ -64,6 +100,7 @@ func main() {
 
 	route := routes.Routing{
 		ServiceName: ServiceName,
+		Stan:        getNatsConsumer(),
 		L:           l,
 		Db:          nil,
 		AppVersion:  configo.EnvString("app-version", "1.0.0"),
@@ -76,7 +113,15 @@ func main() {
 		panic(err)
 	}
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", configo.EnvInt("app-server-port", 8080)), route.R))
+	go func(r *chi.Mux) {
+		probs.Ready()
+		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", configo.EnvInt("app-server-port", 8080)), route.R))
+	}(route.R)
+
+	select {
+	case <-sig:
+		route.Deregister()
+	}
 }
 
 func getStatsDb() (*pgxpool.Pool, error) {
@@ -104,4 +149,28 @@ func getStatsDb() (*pgxpool.Pool, error) {
 	}
 
 	return c, nil
+}
+
+func getNatsConsumer() *natsclient.NatsConnection {
+	rand.Seed(time.Now().UnixNano())
+
+	no := &natsclient.NatsOptions{
+		Cluster:  configo.EnvString("app-nats-cluster", "test-cluster"),
+		ClientId: configo.EnvString("app-nats-client-id", fmt.Sprintf("%s-%s", ServiceName, strconv.Itoa(rand.Intn(10000)))),
+		Host:     configo.EnvString("app-nats-host", "localhost:4222"),
+		ConnectionLostCallback: func(c stan.Conn, e error) {
+			probs.SetLivenessError(e)
+			panic(e)
+		},
+		QueueGroup: configo.EnvString("app-queue-group", ServiceName),
+	}
+
+	nc, err := natsclient.New(no)
+
+	if err != nil {
+		probs.SetReadinessError(err)
+		panic(err)
+	}
+
+	return nc
 }
