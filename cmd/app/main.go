@@ -154,6 +154,7 @@ func main() {
 		Db:          nil,
 		AppVersion:  configo.EnvString("app-version", "1.0.0"),
 		Stats:       statsClient,
+		Port:        configo.EnvInt("app-server-port", 8080),
 	}
 
 	err = route.InitRouter()
@@ -164,7 +165,7 @@ func main() {
 
 	go func(r *chi.Mux) {
 		probs.Ready()
-		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", configo.EnvInt("app-server-port", 8080)), route.R))
+		log.Println(http.ListenAndServe(fmt.Sprintf(":%d", route.Port), route.R))
 	}(route.R)
 
 	select {
