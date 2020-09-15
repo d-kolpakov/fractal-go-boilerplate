@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/handlers"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/server"
-	natsclient "github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclirnt"
+	natsclient "github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclient"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/middleware"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/monitoring"

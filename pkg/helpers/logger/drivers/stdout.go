@@ -13,7 +13,7 @@ type STDOUTDriver struct {
 }
 
 func (s *STDOUTDriver) Init() error {
-	return nil
+	return s.Base.Init()
 }
 
 func (s *STDOUTDriver) SetStats(st *stats.Stats) {

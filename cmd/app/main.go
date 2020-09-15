@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/logger/drivers"
-	natsclient "github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclirnt"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclient"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/pg"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/probs"
@@ -72,6 +72,7 @@ func main() {
 			logger.ContextUIDKey("token"):     "n",
 			logger.ContextUIDKey("source"):    "n",
 			logger.ContextUIDKey("from"):      "n",
+			logger.ContextUIDKey("shard"):     "-1",
 		},
 		NeedToLog: func(ctx context.Context, configuredLevel, level int) bool {
 			//todo log function
