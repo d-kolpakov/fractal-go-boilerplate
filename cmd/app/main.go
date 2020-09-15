@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/d-kolpakov/fractal-go-boilerplate/internal/migrations/common"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/routes"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/logger/drivers"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclient"
@@ -13,6 +15,8 @@ import (
 	"github.com/d-kolpakov/logger/drivers/stdout"
 	"github.com/dhnikolas/configo"
 	"github.com/go-chi/chi"
+	"github.com/golang-migrate/migrate"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"math/rand"
@@ -99,6 +103,50 @@ func main() {
 	statsClient := stats.GetStatsHelper(statsOption, statsPgPool, l)
 	stdoutLDWrapped.SetStats(statsClient)
 
+	conn, err := getDb(statsClient, l)
+
+	if err != nil {
+		panic(err)
+	}
+
+	resource := bindata.Resource(common.AssetNames(), common.Asset)
+	source, err := bindata.WithInstance(resource)
+
+	if err != nil {
+		panic(err)
+	}
+	m, err := migrate.NewWithSourceInstance("common", source, conn.Common().ConnString())
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = m.Up()
+
+	if err != nil && err.Error() != "no change" {
+		panic(err)
+	}
+
+	shardResource := bindata.Resource(common.AssetNames(), common.Asset)
+	shardSource, err := bindata.WithInstance(shardResource)
+
+	if err != nil {
+		panic(err)
+	}
+	for i, sConn := range conn.AllShards() {
+		m, err := migrate.NewWithSourceInstance(fmt.Sprintf("shard_%d", i), shardSource, sConn.ConnString())
+
+		if err != nil {
+			panic(err)
+		}
+
+		err = m.Up()
+
+		if err != nil && err.Error() != "no change" {
+			panic(err)
+		}
+	}
+
 	route := routes.Routing{
 		ServiceName: ServiceName,
 		Stan:        getNatsConsumer(),
@@ -174,4 +222,34 @@ func getNatsConsumer() *natsclient.NatsConnection {
 	}
 
 	return nc
+}
+
+func getDb(stats *stats.Stats, l *logger.Logger) (*pg.Wrapper, error) {
+	return nil, errors.New("not implemented")
+	//Задаем параметры для подключения к БД
+	cfg := &pg.Config{}
+	cfg.Host = configo.EnvString("db-host", "localhost")
+	cfg.Username = configo.EnvString("db-username", "db_user")
+	cfg.Password = configo.EnvString("db-password", "pwd0123456789")
+	cfg.Port = configo.EnvString("db-port", "5432")
+	cfg.DbName = configo.EnvString("db-name", "service_registry")
+	cfg.Timeout = configo.EnvInt("db-timeout", 20)
+
+	//Создаем конфиг для пула
+	poolConfig, err := pg.NewPoolConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	poolConfig.MaxConns = int32(configo.EnvInt("db-stats-max-conns", 5))
+
+	c, err := pg.NewConnection(poolConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	wClient := pg.NewConn(c, stats, l, poolConfig.ConnString())
+	wc := pg.NewWrapper(wClient, nil)
+
+	return wc, nil
 }

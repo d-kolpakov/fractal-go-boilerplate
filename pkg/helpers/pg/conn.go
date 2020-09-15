@@ -13,17 +13,22 @@ import (
 )
 
 type ConnWrapper struct {
-	pool  *pgxpool.Pool
-	stats *stats.Stats
-	l     *logger.Logger
+	pool    *pgxpool.Pool
+	stats   *stats.Stats
+	l       *logger.Logger
+	connStr string
 }
 
-func NewConn(pool *pgxpool.Pool, stats *stats.Stats, l *logger.Logger) *ConnWrapper {
+func NewConn(pool *pgxpool.Pool, stats *stats.Stats, l *logger.Logger, connStr string) *ConnWrapper {
 	return &ConnWrapper{
-		pool:  pool,
-		stats: stats,
-		l:     l,
+		pool:    pool,
+		stats:   stats,
+		l:       l,
+		connStr: connStr,
 	}
+}
+func (w *ConnWrapper) ConnString() string {
+	return w.connStr
 }
 
 func (w *ConnWrapper) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {

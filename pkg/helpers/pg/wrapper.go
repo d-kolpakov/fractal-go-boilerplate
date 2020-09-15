@@ -24,6 +24,10 @@ func (w *Wrapper) Common() *ConnWrapper {
 	return w.common
 }
 
+func (w *Wrapper) AllShards() map[int]*ConnWrapper {
+	return w.shards
+}
+
 func (w *Wrapper) Shard(ctx context.Context) (*ConnWrapper, error) {
 	num := w.getShardFromCtx(ctx)
 
