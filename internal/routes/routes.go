@@ -74,6 +74,7 @@ func (route *Routing) InitRouter() error {
 
 		route.register(r, http.MethodGet, "/", "/", Public, 10, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
 		route.register(r, http.MethodGet, "/private", "/private", Private, 10, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
+		route.register(r, http.MethodGet, "/private2", "/private2", Private, 10, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
 	})
 
 	return nil
@@ -84,7 +85,7 @@ func (route *Routing) register(r chi.Router, method, path, proxyPath, policy str
 		route.registry = append(route.registry, Registry{
 			Method:    method,
 			Path:      path,
-			ProxyPath: proxyPath,
+			ProxyPath: route.serviceUrlPrefix + proxyPath,
 			Policy:    policy,
 			Timeout:   timeout,
 		})

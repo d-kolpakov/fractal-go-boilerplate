@@ -154,7 +154,7 @@ func main() {
 		Db:          nil,
 		AppVersion:  configo.EnvString("app-version", "1.0.0"),
 		Stats:       statsClient,
-		Port:        configo.EnvInt("app-server-port", 8080),
+		Port:        configo.EnvInt("app-server-port", 8085),
 	}
 
 	err = route.InitRouter()
