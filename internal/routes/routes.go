@@ -1,12 +1,12 @@
 package routes
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/handlers"
 	"github.com/d-kolpakov/fractal-go-boilerplate/internal/server"
 	natsclient "github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/natsclient"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/pg"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/stats"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/middleware"
 	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/monitoring"
@@ -25,7 +25,7 @@ type Routing struct {
 	Stats            *stats.Stats
 	L                *logger.Logger
 	R                *chi.Mux
-	Db               *sql.DB
+	Db               *pg.Wrapper
 	Port             int
 	AppVersion       string
 	instanceHash     string
@@ -37,6 +37,7 @@ type Registry struct {
 	Path      string `json:"path"`
 	ProxyPath string `json:"proxy_path"`
 	Policy    string `json:"policy"`
+	Timeout   int    `json:"timeout"`
 }
 
 const (
@@ -44,7 +45,7 @@ const (
 	Private = "private"
 	Root    = "root"
 
-	RegistryQueue = "service-registry"
+	RegistryQueue = "system-service-registry"
 )
 
 func (route *Routing) InitRouter() error {
@@ -71,24 +72,26 @@ func (route *Routing) InitRouter() error {
 			ServiceName: route.ServiceName,
 		}
 
-		route.register(r, http.MethodGet, "/"+route.ServiceName, "/", Public, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
-		route.register(r, http.MethodGet, "/"+route.ServiceName+"/private", "/private", Private, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
+		route.register(r, http.MethodGet, "/", "/", Public, 10, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
+		route.register(r, http.MethodGet, "/private", "/private", Private, 10, server.NewHandlerWrapper(route.Stats, handler.HomeRouteHandler, route.L).Process)
 	})
 
 	return nil
 }
 
-func (route *Routing) register(r chi.Router, method, path, proxyPath, policy string, handler http.HandlerFunc) {
+func (route *Routing) register(r chi.Router, method, path, proxyPath, policy string, timeout int, handler http.HandlerFunc) {
 	defer func(method, path, policy string) {
 		route.registry = append(route.registry, Registry{
 			Method:    method,
 			Path:      path,
 			ProxyPath: proxyPath,
 			Policy:    policy,
+			Timeout:   timeout,
 		})
 	}(method, path, policy)
 
 	r.MethodFunc(method, proxyPath, handler)
+	r.MethodFunc(method, proxyPath+"/", handler)
 }
 
 type ServiceRegistryMessage struct {

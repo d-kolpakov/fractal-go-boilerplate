@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"database/sql"
+	"github.com/d-kolpakov/fractal-go-boilerplate/pkg/helpers/pg"
 	"github.com/d-kolpakov/logger"
 )
 
 type Controller struct {
-	Db    *sql.DB
+	Db    *pg.Wrapper
 	L     *logger.Logger
 	SName string
 }
